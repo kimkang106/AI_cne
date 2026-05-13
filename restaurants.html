@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>요기 어때? – 회식 장소 추천</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --mint:#2BB89A;
+  --mint-dark:#1e9a80;
+  --mint-light:#E0FAF4;
+  --yellow:#F5C800;
+  --yellow-bg:#FFF9E0;
+  --bg:#F4FBF8;
+  --white:#ffffff;
+  --border:#E5EFF0;
+  --text:#111827;
+  --gray:#6B7280;
+  --gray-light:#F9FAFB;
+}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px;}
+
+/* ── HEADER ── */
+.hd{background:var(--white);border-bottom:3px solid var(--mint);padding:20px 20px 16px;text-align:center;}
+.hd-logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;}
+.hd-logo{height:36px;object-fit:contain;}
+.hd-org{font-size:.72rem;color:var(--gray);font-weight:700;letter-spacing:.04em;}
+.hd h1{font-family:'Black Han Sans',sans-serif;font-size:2rem;color:var(--mint);line-height:1.1;margin-bottom:4px;}
+.hd .sub{font-size:.82rem;color:var(--gray);font-weight:500;}
+.hd-stats{display:flex;justify-content:center;gap:8px;margin-top:12px;}
+.hd-stat{background:var(--mint-light);border:1.5px solid var(--mint);border-radius:12px;padding:6px 14px;text-align:center;}
+.hd-stat-n{font-weight:900;font-size:1rem;color:var(--mint-dark);}
+.hd-stat-l{font-size:.58rem;color:var(--gray);margin-top:1px;}
+
+/* ── WRAP ── */
+.wrap{max-width:520px;margin:0 auto;padding:0 14px;}
+
+/* ── SHEET BANNER ── */
+.sheet-banner{display:flex;align-items:center;justify-content:space-between;background:var(--yellow-bg);border:1.5px solid var(--yellow);border-radius:12px;padding:10px 14px;margin-top:14px;gap:8px;}
+.sb-txt{font-size:.78rem;color:#856404;font-weight:600;flex:1;}
+.sb-btns{display:flex;gap:6px;flex-shrink:0;}
+.btn-sheet{padding:6px 12px;background:var(--yellow);color:#111;border:none;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:background .15s;}
+.btn-sheet:hover{background:#e8bc00;}
+.btn-add{background:var(--mint);color:#fff;}
+.btn-add:hover{background:var(--mint-dark);}
+.btn-refresh{background:#fff;border:1.5px solid var(--mint);color:var(--mint);padding:6px 10px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:700;transition:all .15s;}
+.btn-refresh:hover{background:var(--mint);color:#fff;}
+.btn-refresh.spinning{animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── SEARCH ── */
+.search-box{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--border);border-radius:50px;padding:9px 16px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-top:12px;transition:border-color .2s;}
+.search-box:focus-within{border-color:var(--mint);}
+.search-box input{flex:1;border:none;outline:none;font-size:.86rem;font-family:'Noto Sans KR',sans-serif;background:transparent;color:var(--text);}
+.search-box input::placeholder{color:var(--gray);}
+
+/* ── FILTERS ── */
+.f-area{margin-top:12px;}
+.f-row{margin-bottom:8px;}
+.f-label{font-size:.62rem;font-weight:700;color:var(--gray);letter-spacing:.08em;margin-bottom:4px;display:block;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{padding:5px 12px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-size:.73rem;font-weight:500;cursor:pointer;transition:all .18s;color:var(--text);user-select:none;-webkit-tap-highlight-color:transparent;}
+.chip:active{transform:scale(.95);}
+.chip.on{background:var(--mint);border-color:var(--mint);color:#fff;box-shadow:0 2px 8px rgba(43,184,154,.28);}
+
+/* ── RANDOM ── */
+.btn-random{width:100%;padding:14px;background:var(--yellow);color:var(--text);border:none;border-radius:14px;font-family:'Black Han Sans',sans-serif;font-size:1.1rem;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(245,200,0,.35);margin-top:12px;}
+.btn-random:hover{background:#e8bc00;transform:translateY(-1px);}
+.btn-random:active{transform:scale(.98);}
+
+/* ── RESULT CARD ── */
+.result-card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 4px 20px rgba(43,184,154,.12);border:1.5px solid var(--border);margin-top:14px;display:none;animation:popIn .3s cubic-bezier(.34,1.56,.64,1);}
+.result-card.show{display:block;}
+@keyframes popIn{from{opacity:0;transform:scale(.92) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.rc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px;}
+.rc-name{font-family:'Black Han Sans',sans-serif;font-size:1.45rem;color:var(--mint);line-height:1.1;}
+.rc-grade{padding:3px 9px;border-radius:50px;font-size:.68rem;font-weight:700;flex-shrink:0;margin-top:3px;}
+.g-heavy{background:#FDE8E8;color:#9B1C1C;}
+.g-mid{background:var(--yellow-bg);color:#856404;}
+.g-light{background:var(--mint-light);color:var(--mint-dark);}
+.rc-menu{font-size:.83rem;color:var(--gray);margin-bottom:10px;}
+.rc-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.badge{padding:3px 9px;border-radius:50px;font-size:.68rem;font-weight:700;}
+.b-meal{background:#EDE9FE;color:#5B21B6;}
+.b-genre{background:#DBEAFE;color:#1E40AF;}
+.b-price{background:var(--yellow-bg);color:#856404;}
+.b-room{background:var(--mint-light);color:var(--mint-dark);}
+.b-noroom{background:#FDE8E8;color:#9B1C1C;}
+.b-walk{background:#E3F2FD;color:#1565C0;}
+.b-car{background:#FFF3E0;color:#B45309;}
+.rc-info{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+.rc-info span{font-size:.73rem;color:var(--gray);display:flex;align-items:center;gap:4px;}
+.btn-naver{display:block;width:100%;padding:11px;background:var(--mint);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:.84rem;text-align:center;transition:background .18s;}
+.btn-naver:active{background:var(--mint-dark);}
+
+/* ── LIST ── */
+.list-header{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px;}
+.list-title{font-family:'Black Han Sans',sans-serif;font-size:.95rem;color:var(--gray);display:flex;align-items:center;gap:5px;}
+.count-badge{background:var(--yellow);color:var(--text);border-radius:50px;padding:2px 9px;font-size:.68rem;font-weight:900;}
+.sort-sel{border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:4px 9px;font-size:.7rem;font-family:'Noto Sans KR',sans-serif;color:var(--text);cursor:pointer;outline:none;}
+.rest-list{display:flex;flex-direction:column;gap:7px;}
+.rest-item{background:#fff;border-radius:13px;padding:12px 14px;border:1.5px solid var(--border);cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.rest-item:hover{border-color:var(--mint);box-shadow:0 2px 12px rgba(43,184,154,.14);}
+.rest-item:active{transform:scale(.98);}
+.ri-l{flex:1;min-width:0;}
+.ri-name{font-weight:700;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ri-sub{font-size:.7rem;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.ri-r{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
+.ri-price{font-weight:700;font-size:.8rem;color:var(--mint);}
+.ri-mini{display:flex;gap:3px;}
+.mini{font-size:.56rem;padding:2px 5px;border-radius:50px;font-weight:700;}
+.empty{text-align:center;padding:36px 20px;color:var(--gray);display:none;}
+.empty.show{display:block;}
+.empty-emoji{font-size:2.2rem;margin-bottom:8px;}
+
+/* ── LOADING ── */
+.loading{text-align:center;padding:30px 20px;color:var(--gray);display:none;}
+.loading.show{display:block;}
+.loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mint);margin:0 3px;animation:bounce .8s infinite;}
+.loading-dot:nth-child(2){animation-delay:.15s;}
+.loading-dot:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-8px);}}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px);}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;border-radius:22px 22px 0 0;padding:22px 18px 34px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;position:relative;animation:slideUp .26s cubic-bezier(.34,1.2,.64,1);}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:38px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+.modal-x{position:absolute;top:16px;right:16px;background:var(--border);border:none;width:28px;height:28px;border-radius:50%;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gray);}
+.m-name{font-family:'Black Han Sans',sans-serif;font-size:1.55rem;color:var(--mint);margin-bottom:3px;}
+.m-menu{color:var(--gray);font-size:.83rem;margin-bottom:12px;}
+.m-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:13px;}
+.m-cell{background:var(--bg);border-radius:9px;padding:9px 11px;}
+.m-cell-l{font-size:.6rem;color:var(--gray);font-weight:700;letter-spacing:.04em;margin-bottom:2px;}
+.m-cell-v{font-size:.84rem;font-weight:700;}
+.m-dist{margin-bottom:13px;}
+.m-dist-lbl{font-size:.63rem;color:var(--gray);font-weight:700;margin-bottom:5px;}
+.dist-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.dist-bg{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.dist-fill{height:100%;border-radius:3px;}
+.dist-val{font-size:.62rem;font-weight:700;white-space:nowrap;}
+
+/* ── FORM MODAL ── */
+.form-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.form-modal-bg.show{display:flex;}
+.form-modal{background:#fff;border-radius:20px;padding:24px 20px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+.fm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.fm-title{font-family:'Black Han Sans',sans-serif;font-size:1.25rem;color:var(--mint);}
+.fm-close{background:var(--border);border:none;width:30px;height:30px;border-radius:50%;font-size:1rem;cursor:pointer;color:var(--gray);}
+.fm-desc{font-size:.78rem;color:var(--gray);margin-bottom:16px;line-height:1.6;background:var(--mint-light);border-radius:10px;padding:10px 12px;}
+.fm-group{margin-bottom:14px;}
+.fm-label{font-size:.72rem;font-weight:700;color:var(--gray);margin-bottom:5px;display:block;}
+.fm-req{color:#e53e3e;margin-left:2px;}
+.fm-input,.fm-select{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-size:.83rem;font-family:'Noto Sans KR',sans-serif;color:var(--text);outline:none;background:#fff;transition:border-color .18s;}
+.fm-input:focus,.fm-select:focus{border-color:var(--mint);}
+.fm-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fm-hint{font-size:.65rem;color:var(--gray);margin-top:3px;}
+.btn-submit{width:100%;padding:14px;background:var(--mint);color:#fff;border:none;border-radius:12px;font-family:'Black Han Sans',sans-serif;font-size:1rem;cursor:pointer;transition:background .18s;margin-top:6px;}
+.btn-submit:hover{background:var(--mint-dark);}
+.form-success{text-align:center;padding:24px 0;display:none;}
+.form-success.show{display:block;}
+.form-success .s-icon{font-size:2.5rem;margin-bottom:8px;}
+.form-success .s-msg{font-weight:700;font-size:1rem;color:var(--mint);margin-bottom:4px;}
+.form-success .s-sub{font-size:.78rem;color:var(--gray);}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:24px 14px 10px;font-size:.7rem;color:var(--gray);}
+footer strong{color:var(--mint-dark);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hd">
+  <div class="hd-logo-row">
+    <img class="hd-logo" src="https://www.cne.go.kr/images/sub/common/logo_01.png" alt="충청남도교육청" onerror="this.style.display='none'">
+    <span class="hd-org">충청남도교육청</span>
+  </div>
+  <h1>요기 어때? 🍽️</h1>
+  <p class="sub">회식 장소 이곳에서 모두 해결</p>
+  <div class="hd-stats">
+    <div class="hd-stat"><div class="hd-stat-n" id="sTotal">–</div><div class="hd-stat-l">전체</div></div>
+    <div class="hd-stat"><div class="hd-stat-n" id="sRoom">–</div><div class="hd-stat-l">룸 있음</div></div>
+    <div class="hd-stat"><div class="hd-stat-n" id="sWalk">–</div><div class="hd-stat-l">도보 가능</div></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- SHEET BANNER -->
+  <div class="sheet-banner" id="sheetBanner">
+    <span class="sb-txt" id="bannerTxt">📊 Google Sheets 연동 중... 잠시만 기다려 주세요</span>
+    <div class="sb-btns">
+      <button class="btn-sheet btn-add" onclick="openForm()">✏️ 추가</button>
+      <button class="btn-refresh" id="refreshBtn" onclick="loadSheet()" title="새로고침">🔄</button>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-box">
+    <span>🔍</span>
+    <input id="qInput" type="text" placeholder="식당명 또는 메뉴 검색..." autocomplete="off">
+  </div>
+
+  <!-- FILTERS -->
+  <div class="f-area">
+    <div class="f-row">
+      <span class="f-label">🌞 식사 시간</span>
+      <div class="chips" id="fMeal">
+        <div class="chip on" data-v="전체">전체</div>
+        <div class="chip" data-v="점심">점심</div>
+        <div class="chip" data-v="저녁">저녁</div>
+      </div>
+    </div>
+    <div class="f-row">
+      <span class="f-label">🎩 격식 수준</span>
+      <div class="chips" id="fGrade">
+        <div class="chip on" data-v="전체">전체</div>
+        <div class="chip" data-v="Heavy">👔 Heavy</div>
+        <div class="chip" data-v="Middle">Middle</div>
+        <div class="chip" data-v="Light">👟 Light</div>
+      </div>
+    </div>
+    <div class="f-row">
+      <span class="f-label">🍜 음식 장르</span>
+      <div class="chips" id="fGenre">
+        <div class="chip on" data-v="전체">전체</div>
+        <div class="chip" data-v="한식">🥢 한식</div>
+        <div class="chip" data-v="일식">🍱 일식</div>
+        <div class="chip" data-v="양식">🍝 양식</div>
+        <div class="chip" data-v="중식">🥡 중식</div>
+      </div>
+    </div>
+    <div class="f-row">
+      <span class="f-label">🚪 룸 여부</span>
+      <div class="chips" id="fRoom">
+        <div class="chip on" data-v="전체">전체</div>
+        <div class="chip" data-v="O">룸 있음</div>
+        <div class="chip" data-v="X">룸 없음</div>
+      </div>
+    </div>
+    <div class="f-row">
+      <span class="f-label">🚶 이동 방법</span>
+      <div class="chips" id="fWalk">
+        <div class="chip on" data-v="전체">전체</div>
+        <div class="chip" data-v="가능">도보 가능</div>
+        <div class="chip" data-v="불가능">차량 필요</div>
+      </div>
+    </div>
+    <div class="f-row">
+      <span class="f-label">💰 1인 가격대</span>
+      <div class="chips" id="fPrice">
+        <div class="chip on" data-v="전체">전체</div>
+        <div class="chip" data-v="~15000">~1.5만</div>
+        <div class="chip" data-v="~20000">1.5~2만</div>
+        <div class="chip" data-v="20000+">2만+</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-random" onclick="pickRandom()">🎲 오늘 요기 어때? 랜덤 추천!</button>
+
+  <!-- RESULT CARD -->
+  <div class="result-card" id="resultCard">
+    <div class="rc-top">
+      <div class="rc-name" id="rName"></div>
+      <div class="rc-grade" id="rGrade"></div>
+    </div>
+    <div class="rc-menu" id="rMenu"></div>
+    <div class="rc-badges" id="rBadges"></div>
+    <div class="rc-info" id="rInfo"></div>
+    <a class="btn-naver" id="rLink" href="#" target="_blank" rel="noopener noreferrer">🗺️ 네이버 지도에서 보기</a>
+  </div>
+
+  <!-- LIST -->
+  <div class="list-header">
+    <div class="list-title">📋 전체 목록 <span class="count-badge" id="cBadge">0</span></div>
+    <select class="sort-sel" id="sortSel" onchange="render()">
+      <option value="default">기본순</option>
+      <option value="price_asc">가격 낮은순</option>
+      <option value="price_desc">가격 높은순</option>
+      <option value="walk">도보 먼저</option>
+    </select>
+  </div>
+
+  <div class="loading" id="loadingEl">
+    <span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
+    <p style="margin-top:10px;font-size:.78rem;">데이터 불러오는 중...</p>
+  </div>
+  <div class="rest-list" id="restList"></div>
+  <div class="empty" id="emptyEl">
+    <div class="empty-emoji">😢</div>
+    <div>조건에 맞는 식당이 없어요</div>
+    <div style="font-size:.73rem;margin-top:4px;">필터를 바꿔보세요!</div>
+  </div>
+</div>
+
+<footer>
+  회식 맛집 가이드<br>
+  <strong>충청남도교육청 AI동아리</strong> 제작
+</footer>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="modalBg" onclick="bgClose(event)">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal()">✕</button>
+    <div class="modal-handle"></div>
+    <div class="m-name" id="mName"></div>
+    <div class="m-menu" id="mMenu"></div>
+    <div class="m-badges" id="mBadges"></div>
+    <div class="m-grid" id="mGrid"></div>
+    <div class="m-dist" id="mDist"></div>
+    <a class="btn-naver" id="mLink" href="#" target="_blank" rel="noopener noreferrer">🗺️ 네이버 지도에서 보기</a>
+  </div>
+</div>
+
+<!-- FORM MODAL -->
+<div class="form-modal-bg" id="formModalBg">
+  <div class="form-modal">
+    <div class="fm-header">
+      <div class="fm-title">✏️ 식당 추가하기</div>
+      <button class="fm-close" onclick="closeForm()">✕</button>
+    </div>
+
+    <div id="formContent">
+      <div class="fm-desc">
+        📌 입력한 데이터는 Google Sheets에 직접 저장됩니다.<br>
+        등록 후 🔄 새로고침을 누르면 목록에 반영돼요!
+      </div>
+
+      <div class="fm-group">
+        <label class="fm-label">식당 이름 <span class="fm-req">*</span></label>
+        <input class="fm-input" id="f_name" type="text" placeholder="예: 내포복집">
+      </div>
+      <div class="fm-row2">
+        <div class="fm-group">
+          <label class="fm-label">식사 시간 <span class="fm-req">*</span></label>
+          <select class="fm-select" id="f_meal">
+            <option value="">선택</option>
+            <option value="점심">점심</option>
+            <option value="저녁">저녁</option>
+            <option value="점심/저녁">점심/저녁</option>
+          </select>
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">격식 수준 <span class="fm-req">*</span></label>
+          <select class="fm-select" id="f_grade">
+            <option value="">선택</option>
+            <option value="Heavy">Heavy (공식)</option>
+            <option value="Middle">Middle (일반)</option>
+            <option value="Light">Light (캐주얼)</option>
+          </select>
+        </div>
+      </div>
+      <div class="fm-row2">
+        <div class="fm-group">
+          <label class="fm-label">음식 장르 <span class="fm-req">*</span></label>
+          <select class="fm-select" id="f_genre">
+            <option value="">선택</option>
+            <option value="한식">한식</option>
+            <option value="일식">일식</option>
+            <option value="양식">양식</option>
+            <option value="중식">중식</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">룸 여부 <span class="fm-req">*</span></label>
+          <select class="fm-select" id="f_room">
+            <option value="">선택</option>
+            <option value="O">룸 있음</option>
+            <option value="X">룸 없음</option>
+          </select>
+        </div>
+      </div>
+      <div class="fm-group">
+        <label class="fm-label">대표 메뉴</label>
+        <input class="fm-input" id="f_menu" type="text" placeholder="예: 밀복아욱복국, 참복정식">
+      </div>
+      <div class="fm-row2">
+        <div class="fm-group">
+          <label class="fm-label">1인 가격 (원) <span class="fm-req">*</span></label>
+          <input class="fm-input" id="f_price" type="number" placeholder="예: 18000">
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">도보 이동</label>
+          <select class="fm-select" id="f_walk">
+            <option value="">선택</option>
+            <option value="가능">가능</option>
+            <option value="불가능">불가능</option>
+          </select>
+        </div>
+      </div>
+      <div class="fm-row2">
+        <div class="fm-group">
+          <label class="fm-label">도보 소요 (분)</label>
+          <input class="fm-input" id="f_wmin" type="number" placeholder="예: 10">
+          <div class="fm-hint">도보 가능 시만 입력</div>
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">차량 소요 (분)</label>
+          <input class="fm-input" id="f_cmin" type="number" placeholder="예: 5">
+        </div>
+      </div>
+      <div class="fm-row2">
+        <div class="fm-group">
+          <label class="fm-label">최소 인원</label>
+          <input class="fm-input" id="f_minp" type="number" placeholder="예: 4">
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">최대 인원</label>
+          <input class="fm-input" id="f_maxp" type="number" placeholder="예: 30">
+        </div>
+      </div>
+      <div class="fm-group">
+        <label class="fm-label">네이버 지도 링크</label>
+        <input class="fm-input" id="f_link" type="url" placeholder="https://naver.me/...">
+      </div>
+      <button class="btn-submit" onclick="submitToSheet()">📤 Google Sheets에 저장하기</button>
+    </div>
+
+    <!-- 성공 메시지 -->
+    <div class="form-success" id="formSuccess">
+      <div class="s-icon">✅</div>
+      <div class="s-msg">저장 완료!</div>
+      <div class="s-sub">Google Sheets에 데이터가 등록되었어요.<br>🔄 새로고침 버튼을 눌러 목록을 업데이트하세요.</div>
+      <button class="btn-submit" style="margin-top:16px;" onclick="closeForm()">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── 설정 ───────────────────────────────────────────
+const SHEET_ID = '10QMuUO1dulqbfx23Y8g-CgLsMP8VuviJgdiIhJETCz4';
+const GID = '0';
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?gid=${GID}#gid=${GID}`;
+const APPS_SCRIPT_URL = '';
+
+// ── CORS 프록시 폴백 체인 (순서대로 시도)
+// Google Sheets는 브라우저에서 직접 접근 불가(CORS 차단) → 중간 프록시 필요
+const PROXIES = [
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+// ─── 헬퍼 ───────────────────────────────────────────
+const fmt = p => p >= 10000 ? (p/10000).toFixed(1).replace('.0','')+'만원' : p.toLocaleString()+'원';
+const ge  = g => ({한식:'🥢',일식:'🍱',양식:'🍝',중식:'🥡'}[g]||'🍽️');
+const gi  = g => ({
+  Heavy : {cls:'g-heavy', txt:'👔 Heavy'},
+  Middle: {cls:'g-mid',   txt:'Middle'},
+  Light : {cls:'g-light', txt:'👟 Light'}
+}[g] || {cls:'g-mid', txt:'Middle'});
+
+// ─── 상태 ───────────────────────────────────────────
+let DB = [];
+let F  = {meal:'전체', grade:'전체', genre:'전체', room:'전체', walk:'전체', price:'전체', q:''};
+
+// ─── CSV → DB 파싱 ───────────────────────────────────
+function parseCSV(csv){
+  const lines = csv.trim().split('\n');
+  if(lines.length < 2) return [];
+  const header = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+  const col = k => header.indexOf(k);
+
+  return lines.slice(1).map((line,idx)=>{
+    // CSV 파싱 (쉼표 내 따옴표 처리)
+    const vals = [];
+    let cur='', inQ=false;
+    for(const ch of line){
+      if(ch==='"'){inQ=!inQ;}
+      else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
+      else cur+=ch;
+    }
+    vals.push(cur.trim());
+    const v = i => (vals[i]||'').replace(/^"|"$/g,'').trim();
+
+    // 컬럼 매핑 (순서 기준 또는 헤더 기준)
+    const name  = v(col('name'))  || v(col('식당명'))  || v(0);
+    const meal  = v(col('meal'))  || v(col('식사시간'))|| v(1);
+    const grade = v(col('grade')) || v(col('격식'))    || v(2);
+    const room  = v(col('room'))  || v(col('룸'))      || v(3);
+    const walk  = v(col('walk'))  || v(col('도보'))    || v(4);
+    const wMin  = parseInt(v(col('wmin')) || v(col('도보분')) || v(5))||null;
+    const cMin  = parseInt(v(col('cmin')) || v(col('차량분')) || v(6))||5;
+    const minP  = parseInt(v(col('minp')) || v(col('최소인원'))|| v(7))||4;
+    const maxP  = parseInt(v(col('maxp')) || v(col('최대인원'))|| v(8))||null;
+    const genre = v(col('genre')) || v(col('장르'))    || v(9);
+    const menu  = v(col('menu'))  || v(col('메뉴'))    || v(10);
+    const price = parseInt(v(col('price'))|| v(col('가격'))|| v(11))||0;
+    const link  = v(col('link'))  || v(col('링크'))    || v(12);
+
+    if(!name) return null;
+    return {id:idx+1, name, meal, grade, room, walk, wMin, cMin, minP, maxP, genre, menu, price, link};
+  }).filter(Boolean);
+}
+
+// ─── 시트 로드 (프록시 폴백 체인) ────────────────────
+async function fetchWithProxies(rawUrl) {
+  for (let i = 0; i < PROXIES.length; i++) {
+    try {
+      const proxyUrl = PROXIES[i](rawUrl);
+      const res = await Promise.race([
+        fetch(proxyUrl),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+      ]);
+      if (!res.ok) continue;
+      const json = await res.json();
+      // allorigins / corsproxy.io → { contents: "..." }
+      // codetabs → 직접 텍스트 반환
+      const csv = json.contents ?? json;
+      if (typeof csv === 'string' && csv.trim().length > 10) return csv;
+    } catch (e) {
+      console.warn(`프록시 ${i+1} 실패:`, e.message);
+    }
+  }
+  return null;
+}
+
+async function loadSheet(){
+  const btn = document.getElementById('refreshBtn');
+  const banner = document.getElementById('sheetBanner');
+  btn.classList.add('spinning');
+  document.getElementById('loadingEl').classList.add('show');
+  document.getElementById('restList').innerHTML='';
+  document.getElementById('emptyEl').classList.remove('show');
+
+  try{
+    const csv = await fetchWithProxies(CSV_URL);
+    if (!csv) throw new Error('모든 프록시 실패');
+
+    // 시트가 비공개인 경우 HTML 로그인 페이지가 반환됨
+    if (csv.includes('<html') || csv.includes('Sign in')) {
+      showSheetError('🔒 Google Sheets 공유 설정을 확인해 주세요.', '시트를 <b>"링크가 있는 모든 사용자 – 뷰어"</b> 로 공유해야 데이터를 불러올 수 있어요.');
+      loadFallback(); return;
+    }
+
+    const data = parseCSV(csv);
+    if(data.length > 0){
+      DB = data;
+      // 연동 성공 시 배너 업데이트
+      const now = new Date();
+      const ts = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('bannerTxt').textContent = `✅ 시트 연동 완료 (${ts} 기준) · 식당 추가는 ✏️ 버튼`;
+      updateStats(); render();
+    } else {
+      showSheetError('📋 시트에 데이터가 없어요.', '헤더 행(name, meal, grade…)과 데이터 행을 입력해 주세요.');
+      loadFallback();
+    }
+  } catch(e){
+    console.warn('시트 로드 전체 실패:', e);
+    showSheetError('⚠️ 시트를 불러오지 못했어요.', '기본 데이터로 표시합니다. 🔄 버튼을 눌러 다시 시도하거나 시트 공유 설정을 확인해 주세요.');
+    loadFallback();
+  } finally {
+    btn.classList.remove('spinning');
+    document.getElementById('loadingEl').classList.remove('show');
+  }
+}
+
+function showSheetError(title, desc) {
+  const el = document.getElementById('bannerTxt');
+  el.innerHTML = `${title} <span style="font-weight:400">${desc}</span>`;
+  document.getElementById('sheetBanner').style.background = '#FDE8E8';
+  document.getElementById('sheetBanner').style.borderColor = '#F87171';
+  el.style.color = '#9B1C1C';
+}
+
+function loadFallback(){
+  DB = FALLBACK_DB;
+  updateStats();
+  render();
+}
+
+function updateStats(){
+  // 식당별 중복 제거 (같은 이름은 1개로 집계)
+  const unique = [...new Map(DB.map(r=>[r.name,r])).values()];
+  document.getElementById('sTotal').textContent = unique.length;
+  document.getElementById('sRoom').textContent  = unique.filter(r=>r.room==='O').length;
+  document.getElementById('sWalk').textContent  = unique.filter(r=>r.walk==='가능').length;
+  document.getElementById('cBadge').textContent = getFiltered().length;
+}
+
+// ─── 필터 & 렌더 ──────────────────────────────────────
+function getFiltered(){
+  let list = DB.filter(r=>{
+    if(F.q && !r.name.toLowerCase().includes(F.q) && !r.menu.toLowerCase().includes(F.q)) return false;
+    if(F.meal  !=='전체' && !r.meal.includes(F.meal))   return false;
+    if(F.grade !=='전체' && r.grade !== F.grade)         return false;
+    if(F.genre !=='전체' && r.genre !== F.genre)         return false;
+    if(F.room  !=='전체' && r.room  !== F.room)          return false;
+    if(F.walk  !=='전체' && r.walk  !== F.walk)          return false;
+    if(F.price==='~15000'  && r.price > 15000)           return false;
+    if(F.price==='~20000'  && (r.price<=15000||r.price>20000)) return false;
+    if(F.price==='20000+'  && r.price <= 20000)          return false;
+    return true;
+  });
+  const s = document.getElementById('sortSel').value;
+  if(s==='price_asc')  list = [...list].sort((a,b)=>a.price-b.price);
+  if(s==='price_desc') list = [...list].sort((a,b)=>b.price-a.price);
+  if(s==='walk')       list = [...list].sort((a,b)=>(a.walk==='가능'?0:1)-(b.walk==='가능'?0:1));
+  return list;
+}
+
+function render(){
+  const listEl  = document.getElementById('restList');
+  const emptyEl = document.getElementById('emptyEl');
+  const badge   = document.getElementById('cBadge');
+  const filtered = getFiltered();
+  listEl.innerHTML = '';
+  badge.textContent = filtered.length;
+  if(!filtered.length){ emptyEl.classList.add('show'); return; }
+  emptyEl.classList.remove('show');
+
+  filtered.forEach(r=>{
+    const g  = gi(r.grade);
+    const el = document.createElement('div');
+    el.className = 'rest-item';
+    el.innerHTML = `
+      <div class="ri-l">
+        <div class="ri-name">${r.name}</div>
+        <div class="ri-sub">${ge(r.genre)} ${r.menu} · ${r.meal}</div>
+      </div>
+      <div class="ri-r">
+        <div class="ri-price">${fmt(r.price)}</div>
+        <div class="ri-mini">
+          <span class="mini ${g.cls}">${g.txt}</span>
+          ${r.room==='O'?'<span class="mini" style="background:#E0FAF4;color:#1e9a80">룸</span>':''}
+          ${r.walk==='가능'?'<span class="mini" style="background:#E3F2FD;color:#1565C0">도보</span>':''}
+        </div>
+      </div>`;
+    el.addEventListener('click', ()=>openModal(r));
+    listEl.appendChild(el);
+  });
+}
+
+// ─── 이벤트 ──────────────────────────────────────────
+document.querySelectorAll('.chips').forEach(g=>{
+  g.querySelectorAll('.chip').forEach(c=>{
+    c.addEventListener('click',()=>{
+      g.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+      c.classList.add('on');
+      const id = g.id;
+      if(id==='fMeal')  F.meal  = c.dataset.v;
+      if(id==='fGrade') F.grade = c.dataset.v;
+      if(id==='fGenre') F.genre = c.dataset.v;
+      if(id==='fRoom')  F.room  = c.dataset.v;
+      if(id==='fWalk')  F.walk  = c.dataset.v;
+      if(id==='fPrice') F.price = c.dataset.v;
+      render();
+      document.getElementById('resultCard').classList.remove('show');
+    });
+  });
+});
+document.getElementById('qInput').addEventListener('input', e=>{
+  F.q = e.target.value.trim().toLowerCase();
+  render();
+  document.getElementById('resultCard').classList.remove('show');
+});
+
+// ─── 랜덤 ────────────────────────────────────────────
+function pickRandom(){
+  const f = getFiltered();
+  if(!f.length){ alert('😢 조건에 맞는 식당이 없어요!'); return; }
+  const r = f[Math.floor(Math.random()*f.length)];
+  showResult(r);
+  setTimeout(()=>document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+
+function showResult(r){
+  const g = gi(r.grade);
+  document.getElementById('rName').textContent = r.name;
+  document.getElementById('rGrade').className  = 'rc-grade '+g.cls;
+  document.getElementById('rGrade').textContent = g.txt;
+  document.getElementById('rMenu').textContent  = r.menu;
+  document.getElementById('rLink').href = r.link||'#';
+  document.getElementById('rBadges').innerHTML = `
+    <span class="badge b-meal">${r.meal}</span>
+    <span class="badge b-genre">${ge(r.genre)} ${r.genre}</span>
+    <span class="badge b-price">1인 ${fmt(r.price)}</span>
+    <span class="badge ${g.cls}">${g.txt}</span>
+    ${r.room==='O'?'<span class="badge b-room">🚪 룸 있음</span>':'<span class="badge b-noroom">룸 없음</span>'}
+    ${r.walk==='가능'?`<span class="badge b-walk">🚶 도보 ${r.wMin}분</span>`:'<span class="badge b-car">🚗 차량</span>'}`;
+  document.getElementById('rInfo').innerHTML = `
+    <span>🚗 차량 ${r.cMin}분</span>
+    <span>👥 ${r.minP}~${r.maxP??'?'}명</span>`;
+  const card = document.getElementById('resultCard');
+  card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
+}
+
+// ─── 상세 모달 ────────────────────────────────────────
+function openModal(r){
+  const g = gi(r.grade);
+  document.getElementById('mName').textContent = r.name;
+  document.getElementById('mMenu').textContent = r.menu;
+  document.getElementById('mLink').href = r.link||'#';
+  document.getElementById('mBadges').innerHTML = `
+    <span class="badge b-meal">${r.meal}</span>
+    <span class="badge b-genre">${ge(r.genre)} ${r.genre}</span>
+    <span class="badge b-price">1인 ${fmt(r.price)}</span>
+    <span class="badge ${g.cls}">${g.txt}</span>
+    ${r.room==='O'?'<span class="badge b-room">🚪 룸</span>':'<span class="badge b-noroom">룸 없음</span>'}
+    ${r.walk==='가능'?'<span class="badge b-walk">🚶 도보</span>':'<span class="badge b-car">🚗 차량</span>'}`;
+  document.getElementById('mGrid').innerHTML = `
+    <div class="m-cell"><div class="m-cell-l">식사 시간</div><div class="m-cell-v">${r.meal}</div></div>
+    <div class="m-cell"><div class="m-cell-l">1인 가격</div><div class="m-cell-v" style="color:var(--mint)">${fmt(r.price)}</div></div>
+    <div class="m-cell"><div class="m-cell-l">룸</div><div class="m-cell-v">${r.room==='O'?'✅ 있음':'❌ 없음'}</div></div>
+    <div class="m-cell"><div class="m-cell-l">적정 인원</div><div class="m-cell-v">${r.minP}~${r.maxP??'?'}명</div></div>
+    <div class="m-cell"><div class="m-cell-l">격식</div><div class="m-cell-v">${r.grade}</div></div>
+    <div class="m-cell"><div class="m-cell-l">장르</div><div class="m-cell-v">${ge(r.genre)} ${r.genre}</div></div>`;
+  let d = '<div class="m-dist-lbl">📍 청사 기준 거리</div>';
+  if(r.walk==='가능'){
+    const p = Math.min(100, Math.round((r.wMin||10)/20*100));
+    d += `<div class="dist-row"><span style="font-size:.6rem;width:46px;flex-shrink:0">🚶 도보</span><div class="dist-bg"><div class="dist-fill" style="width:${p}%;background:var(--mint)"></div></div><span class="dist-val" style="color:var(--mint)">${r.wMin}분</span></div>`;
+  }
+  const cp = Math.min(100, Math.round((r.cMin||5)/20*100));
+  d += `<div class="dist-row"><span style="font-size:.6rem;width:46px;flex-shrink:0">🚗 차량</span><div class="dist-bg"><div class="dist-fill" style="width:${cp}%;background:var(--yellow)"></div></div><span class="dist-val" style="color:#856404">${r.cMin}분</span></div>`;
+  document.getElementById('mDist').innerHTML = d;
+  document.getElementById('modalBg').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function bgClose(e){ if(e.target===document.getElementById('modalBg')) closeModal(); }
+function closeModal(){ document.getElementById('modalBg').classList.remove('show'); document.body.style.overflow=''; }
+
+// ─── 입력 폼 ──────────────────────────────────────────
+function openForm(){
+  document.getElementById('formContent').style.display='block';
+  document.getElementById('formSuccess').classList.remove('show');
+  document.getElementById('formModalBg').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeForm(){
+  document.getElementById('formModalBg').classList.remove('show');
+  document.body.style.overflow='';
+}
+document.getElementById('formModalBg').addEventListener('click', e=>{
+  if(e.target===document.getElementById('formModalBg')) closeForm();
+});
+
+async function submitToSheet(){
+  const name  = document.getElementById('f_name').value.trim();
+  const meal  = document.getElementById('f_meal').value;
+  const grade = document.getElementById('f_grade').value;
+  const genre = document.getElementById('f_genre').value;
+  const room  = document.getElementById('f_room').value;
+  const price = document.getElementById('f_price').value;
+
+  if(!name||!meal||!grade||!genre||!room||!price){
+    alert('⚠️ 필수 항목(*)을 모두 입력해주세요!');
+    return;
+  }
+
+  const row = {
+    name,
+    meal,
+    grade,
+    room,
+    walk  : document.getElementById('f_walk').value  || '불가능',
+    wMin  : document.getElementById('f_wmin').value  || '',
+    cMin  : document.getElementById('f_cmin').value  || '',
+    minP  : document.getElementById('f_minp').value  || '4',
+    maxP  : document.getElementById('f_maxp').value  || '',
+    genre,
+    menu  : document.getElementById('f_menu').value.trim(),
+    price,
+    link  : document.getElementById('f_link').value.trim()
+  };
+
+  // Apps Script URL이 설정된 경우 직접 전송
+  if(APPS_SCRIPT_URL){
+    try{
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(row)
+      });
+      document.getElementById('formContent').style.display='none';
+      document.getElementById('formSuccess').classList.add('show');
+      return;
+    } catch(e){ console.warn('Apps Script 전송 실패, 시트 직접 열기로 전환'); }
+  }
+
+  // Apps Script 미설정 시 → Google Sheets로 이동 안내
+  const sheetUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?gid=${GID}#gid=${GID}`;
+  const confirmed = confirm(
+    `📊 Google Apps Script가 아직 연결되지 않았어요.\n\n` +
+    `지금 Google Sheets를 열어 직접 입력하시겠어요?\n\n` +
+    `입력할 내용:\n` +
+    `식당명: ${row.name}\n식사: ${row.meal} | 격식: ${row.grade}\n장르: ${row.genre} | 룸: ${row.room}\n가격: ${Number(row.price).toLocaleString()}원`
+  );
+  if(confirmed) window.open(sheetUrl,'_blank');
+}
+
+// ─── 기본 데이터 (시트 로딩 실패 시 폴백) ─────────────
+const FALLBACK_DB = [
+  {id:1,  name:"내포복집",          meal:"점심", grade:"Heavy",  room:"O",walk:"가능",  wMin:10,cMin:5, minP:4,maxP:30,  genre:"한식",menu:"밀복아욱복국",        price:18000,link:"https://naver.me/FA2iGKcn"},
+  {id:2,  name:"내포복집",          meal:"저녁", grade:"Heavy",  room:"O",walk:"가능",  wMin:10,cMin:5, minP:4,maxP:30,  genre:"한식",menu:"참복아욱복국",        price:28000,link:"https://naver.me/FA2iGKcn"},
+  {id:3,  name:"솔담",              meal:"점심", grade:"Middle", room:"O",walk:"불가능",wMin:null,cMin:10,minP:4,maxP:8, genre:"한식",menu:"돈가스, 비빔밥",    price:13000,link:"https://naver.me/xLss7JB5"},
+  {id:4,  name:"우마이야",          meal:"점심", grade:"Light",  room:"X",walk:"가능",  wMin:15,cMin:5, minP:4,maxP:10,  genre:"일식",menu:"밀푀유나베",         price:18000,link:"https://naver.me/54Lbq37B"},
+  {id:5,  name:"스시인",            meal:"점심", grade:"Light",  room:"X",walk:"가능",  wMin:7, cMin:5, minP:4,maxP:12,  genre:"일식",menu:"점심특선",           price:18000,link:"https://naver.me/FTXDUoOx"},
+  {id:6,  name:"스시마츠",          meal:"점심", grade:"Heavy",  room:"O",walk:"가능",  wMin:12,cMin:5, minP:4,maxP:26,  genre:"일식",menu:"정식",              price:15000,link:"https://naver.me/Fmf61A8L"},
+  {id:7,  name:"스시마츠",          meal:"저녁", grade:"Heavy",  room:"O",walk:"가능",  wMin:12,cMin:5, minP:4,maxP:26,  genre:"일식",menu:"정식",              price:30000,link:"https://naver.me/Fmf61A8L"},
+  {id:8,  name:"나능이능이버섯백숙", meal:"점심", grade:"Middle", room:"O",walk:"가능",  wMin:10,cMin:5, minP:4,maxP:60,  genre:"한식",menu:"능이버섯삼계탕+찰밥",price:17000,link:"https://naver.me/51uQpX3J"},
+  {id:9,  name:"나능이능이버섯백숙", meal:"저녁", grade:"Middle", room:"O",walk:"가능",  wMin:10,cMin:5, minP:4,maxP:60,  genre:"한식",menu:"능이버섯삼계탕+찰밥",price:17000,link:"https://naver.me/51uQpX3J"},
+  {id:10, name:"한우전문점 아토",    meal:"점심", grade:"Middle", room:"O",walk:"가능",  wMin:10,cMin:5, minP:4,maxP:null,genre:"한식",menu:"한우갈비탕",         price:20000,link:"https://naver.me/5A3UXShW"},
+  {id:11, name:"지산흑돌",          meal:"점심", grade:"Middle", room:"X",walk:"불가능",wMin:null,cMin:10,minP:4,maxP:40,genre:"한식",menu:"버섯불고기전골",    price:23000,link:"https://naver.me/GalfWrjQ"},
+  {id:12, name:"군자정",            meal:"점심", grade:"Heavy",  room:"O",walk:"불가능",wMin:null,cMin:15,minP:4,maxP:40,genre:"한식",menu:"산채정식+돌솥밥",   price:27000,link:"https://naver.me/GalfWrjQ"},
+  {id:13, name:"내포여여",          meal:"점심", grade:"Light",  room:"O",walk:"가능",  wMin:10,cMin:5, minP:4,maxP:12,  genre:"양식",menu:"텐달러파스타 런치",  price:13900,link:"https://naver.me/xl0XBE2b"},
+  {id:14, name:"산마루식당",        meal:"점심", grade:"Light",  room:"X",walk:"가능",  wMin:15,cMin:3, minP:4,maxP:30,  genre:"한식",menu:"더덕정식",           price:17000,link:"https://naver.me/xExaGvq1"},
+  {id:15, name:"바른고기",          meal:"저녁", grade:"Middle", room:"O",walk:"가능",  wMin:10,cMin:4, minP:4,maxP:10,  genre:"한식",menu:"돼지고기 숯불구이",  price:20000,link:"https://naver.me/xBwLhUUE"},
+  {id:16, name:"산울림",            meal:"점심", grade:"Middle", room:"O",walk:"불가능",wMin:null,cMin:8,minP:4,maxP:8,  genre:"한식",menu:"돈가스·순두부·돌솥비빔밥",price:14000,link:"https://naver.me/F424vnGI"},
+  {id:17, name:"이화원",            meal:"점심", grade:"Middle", room:"O",walk:"가능",  wMin:10,cMin:5, minP:8,maxP:12,  genre:"중식",menu:"런치코스A",          price:28000,link:"https://naver.me/GG7tO4ib"},
+  {id:18, name:"이화원",            meal:"저녁", grade:"Middle", room:"O",walk:"가능",  wMin:10,cMin:5, minP:8,maxP:12,  genre:"중식",menu:"단품메뉴",           price:35000,link:"https://naver.me/GG7tO4ib"},
+  {id:19, name:"홍동한우 내포점",   meal:"점심", grade:"Middle", room:"O",walk:"가능",  wMin:15,cMin:5, minP:8,maxP:20,  genre:"한식",menu:"한우 맑은탕/소금구이",price:10000,link:"https://naver.me/x3jFDddT"},
+  {id:20, name:"토바우 한우마을",   meal:"점심", grade:"Heavy",  room:"O",walk:"가능",  wMin:15,cMin:10,minP:8,maxP:20,  genre:"한식",menu:"석쇠구이(점심특선)", price:22000,link:"https://naver.me/GWeOzn5K"},
+  {id:21, name:"토바우 한우마을",   meal:"저녁", grade:"Heavy",  room:"O",walk:"가능",  wMin:15,cMin:10,minP:8,maxP:20,  genre:"한식",menu:"소고기구이",         price:40000,link:"https://naver.me/GWeOzn5K"},
+  {id:22, name:"돌산가든",          meal:"저녁", grade:"Light",  room:"O",walk:"불가능",wMin:null,cMin:15,minP:4,maxP:40,genre:"한식",menu:"삼겹살",            price:18000,link:"https://naver.me/GxLjzWxo"},
+];
+
+// ─── 초기화 ──────────────────────────────────────────
+loadSheet();
+</script>
+</body>
+</html>

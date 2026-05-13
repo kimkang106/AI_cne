@@ -466,39 +466,87 @@ const gi  = g => ({
 let DB = [];
 let F  = {meal:'전체', grade:'전체', genre:'전체', room:'전체', walk:'전체', price:'전체', q:''};
 
+// ─── CSV 한 줄 파싱 ──────────────────────────────────
+function parseLine(line){
+  const vals = [];
+  let cur = '', inQ = false;
+  for(const ch of line){
+    if(ch === '"'){ inQ = !inQ; }
+    else if(ch === ',' && !inQ){ vals.push(cur.trim()); cur = ''; }
+    else cur += ch;
+  }
+  vals.push(cur.trim());
+  return vals.map(v => v.replace(/^"|"$/g,'').trim());
+}
+
 // ─── CSV → DB 파싱 ───────────────────────────────────
-function parseCSV(csv){
-  const lines = csv.trim().split('\n');
-  if(lines.length < 2) return [];
-  const header = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
-  const col = k => header.indexOf(k);
+// 헤더 키 별칭 (시트 컬럼명 → 내부 키)
+const HEADER_ALIASES = {
+  name  : ['name','식당명','가게명','상호명','식당'],
+  meal  : ['meal','식사시간','식사','시간대'],
+  grade : ['grade','격식','격식수준','등급'],
+  room  : ['room','룸','개인룸','룸여부'],
+  walk  : ['walk','도보','도보여부','도보이동'],
+  wmin  : ['wmin','도보분','도보시간','도보소요','도보(분)'],
+  cmin  : ['cmin','차량분','차량시간','차량소요','차량(분)'],
+  minp  : ['minp','최소인원','min인원','인원(최솟값)','적정인원(최솟값)'],
+  maxp  : ['maxp','최대인원','max인원','인원(최댓값)','적정인원(최댓값)'],
+  genre : ['genre','장르','음식장르','음식종류','종류'],
+  menu  : ['menu','메뉴','대표메뉴','주요메뉴'],
+  price : ['price','가격','1인가격','가격(원)','단가'],
+  link  : ['link','링크','url','네이버링크','지도링크'],
+};
 
-  return lines.slice(1).map((line,idx)=>{
-    // CSV 파싱 (쉼표 내 따옴표 처리)
-    const vals = [];
-    let cur='', inQ=false;
-    for(const ch of line){
-      if(ch==='"'){inQ=!inQ;}
-      else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
-      else cur+=ch;
+function buildColMap(header){
+  const map = {};
+  for(const [key, aliases] of Object.entries(HEADER_ALIASES)){
+    map[key] = -1;
+    for(const alias of aliases){
+      const idx = header.indexOf(alias.toLowerCase());
+      if(idx !== -1){ map[key] = idx; break; }
     }
-    vals.push(cur.trim());
-    const v = i => (vals[i]||'').replace(/^"|"$/g,'').trim();
+  }
+  return map;
+}
 
-    // 컬럼 매핑 (순서 기준 또는 헤더 기준)
-    const name  = v(col('name'))  || v(col('식당명'))  || v(0);
-    const meal  = v(col('meal'))  || v(col('식사시간'))|| v(1);
-    const grade = v(col('grade')) || v(col('격식'))    || v(2);
-    const room  = v(col('room'))  || v(col('룸'))      || v(3);
-    const walk  = v(col('walk'))  || v(col('도보'))    || v(4);
-    const wMin  = parseInt(v(col('wmin')) || v(col('도보분')) || v(5))||null;
-    const cMin  = parseInt(v(col('cmin')) || v(col('차량분')) || v(6))||5;
-    const minP  = parseInt(v(col('minp')) || v(col('최소인원'))|| v(7))||4;
-    const maxP  = parseInt(v(col('maxp')) || v(col('최대인원'))|| v(8))||null;
-    const genre = v(col('genre')) || v(col('장르'))    || v(9);
-    const menu  = v(col('menu'))  || v(col('메뉴'))    || v(10);
-    const price = parseInt(v(col('price'))|| v(col('가격'))|| v(11))||0;
-    const link  = v(col('link'))  || v(col('링크'))    || v(12);
+function isHeaderRow(cells){
+  // 식당명·name·meal 등 알려진 헤더 단어가 하나라도 있으면 헤더 행으로 판단
+  const known = ['name','식당명','meal','식사시간','grade','격식','room','룸','genre','장르','menu','메뉴','price','가격','link','링크'];
+  const lower = cells.map(c=>c.toLowerCase());
+  return known.some(k => lower.includes(k));
+}
+
+function parseCSV(csv){
+  const rawLines = csv.trim().split('\n').filter(l => l.trim());
+  if(rawLines.length < 2) return [];
+
+  // 실제 헤더 행 탐색 (앞쪽 최대 5행 안에서)
+  let headerIdx = 0;
+  for(let i = 0; i < Math.min(5, rawLines.length); i++){
+    if(isHeaderRow(parseLine(rawLines[i]))){ headerIdx = i; break; }
+  }
+
+  const header = parseLine(rawLines[headerIdx]).map(h => h.toLowerCase().replace(/\s+/g,''));
+  const cm = buildColMap(header);
+  const v = (vals, i) => i >= 0 ? (vals[i] || '') : '';
+
+  return rawLines.slice(headerIdx + 1).map((line, idx) => {
+    const vals = parseLine(line);
+    if(vals.every(c => !c)) return null; // 빈 행 무시
+
+    const name  = v(vals, cm.name);
+    const meal  = v(vals, cm.meal);
+    const grade = v(vals, cm.grade);
+    const room  = v(vals, cm.room);
+    const walk  = v(vals, cm.walk);
+    const wMin  = parseInt(v(vals, cm.wmin))  || null;
+    const cMin  = parseInt(v(vals, cm.cmin))  || 5;
+    const minP  = parseInt(v(vals, cm.minp))  || 4;
+    const maxP  = parseInt(v(vals, cm.maxp))  || null;
+    const genre = v(vals, cm.genre);
+    const menu  = v(vals, cm.menu);
+    const price = parseInt(v(vals, cm.price)) || 0;
+    const link  = v(vals, cm.link);
 
     if(!name) return null;
     return {id:idx+1, name, meal, grade, room, walk, wMin, cMin, minP, maxP, genre, menu, price, link};

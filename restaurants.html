@@ -438,16 +438,18 @@ footer strong{color:var(--mint-dark);}
 // ─── 설정 ───────────────────────────────────────────
 const SHEET_ID = '10QMuUO1dulqbfx23Y8g-CgLsMP8VuviJgdiIhJETCz4';
 const GID = '0';
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+const CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
 const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?gid=${GID}#gid=${GID}`;
 const APPS_SCRIPT_URL = '';
 
 // ── CORS 프록시 폴백 체인 (순서대로 시도)
-// Google Sheets는 브라우저에서 직접 접근 불가(CORS 차단) → 중간 프록시 필요
 const PROXIES = [
-  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  url => `https://cors-anywhere.herokuapp.com/${url}`,
 ];
 
 // ─── 헬퍼 ───────────────────────────────────────────
@@ -503,23 +505,32 @@ function parseCSV(csv){
   }).filter(Boolean);
 }
 
-// ─── 시트 로드 (프록시 폴백 체인) ────────────────────
+// ─── 시트 로드 (직접 fetch → gviz → 프록시 폴백 체인) ─
+async function tryFetch(url, label) {
+  const res = await Promise.race([
+    fetch(url, {cache: 'no-store'}),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+  ]);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  let csv;
+  try { const json = JSON.parse(text); csv = json.contents ?? text; } catch { csv = text; }
+  if (typeof csv !== 'string' || csv.trim().length < 10) throw new Error('빈 응답');
+  console.log(`✅ ${label} 성공`);
+  return csv;
+}
+
 async function fetchWithProxies(rawUrl) {
+  // 1. gviz 엔드포인트 직접 시도 (CORS 허용되는 경우 있음)
+  try { return await tryFetch(GVIZ_URL, '직접(gviz)'); } catch(e) { console.warn('직접(gviz) 실패:', e.message); }
+
+  // 2. export URL 직접 시도
+  try { return await tryFetch(rawUrl, '직접(export)'); } catch(e) { console.warn('직접(export) 실패:', e.message); }
+
+  // 3. 프록시 체인
   for (let i = 0; i < PROXIES.length; i++) {
-    try {
-      const proxyUrl = PROXIES[i](rawUrl);
-      const res = await Promise.race([
-        fetch(proxyUrl),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
-      ]);
-      if (!res.ok) continue;
-      const text = await res.text();
-      let csv;
-      try { const json = JSON.parse(text); csv = json.contents ?? text; } catch { csv = text; }
-      if (typeof csv === 'string' && csv.trim().length > 10) return csv;
-    } catch (e) {
-      console.warn(`프록시 ${i+1} 실패:`, e.message);
-    }
+    try { return await tryFetch(PROXIES[i](rawUrl), `프록시 ${i+1}`); }
+    catch (e) { console.warn(`프록시 ${i+1} 실패:`, e.message); }
   }
   return null;
 }
